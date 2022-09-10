@@ -19,95 +19,95 @@
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 %% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 %% OF  MERCHANTABILITY,  FITNESS  FOR  A  PARTICULAR  PURPOSE  AND
-%% NONINFRINGEMENT. IN  NO  EVENT  SHALL  THE AUTHORS OR COPYRIGHT
+%% NON INFRINGEMENT. IN  NO  EVENT  SHALL  THE AUTHORS OR COPYRIGHT
 %% HOLDERS  BE  LIABLE FOR  ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 %% WHETHER IN AN ACTION OF CONTRACT,  TORT  OR OTHERWISE,  ARISING
 %% FROM,  OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR
 %% OTHER DEALINGS IN THE SOFTWARE.
 
 
--record(pool, {pool_id :: atom(), 
-	       size :: number(), 
-	       user :: string(), 
-	       password :: string(), 
-	       host :: string(), 
-	       port :: number(), 
-	       database :: string(), 
+-record(pool, {pool_id :: atom(),
+	       size :: number(),
+	       user :: string(),
+	       password :: string(),
+	       host :: string(),
+	       port :: number(),
+	       database :: string(),
 	       encoding :: utf8 | latin1 | {utf8, utf8_unicode_ci} | {utf8, utf8_general_ci},
-	       available=queue:new() :: queue(), 
-	       locked=gb_trees:empty() :: gb_tree(), 
-	       waiting=queue:new() :: queue(), 
-	       start_cmds=[] :: string(), 
-	       conn_test_period=0 :: number(), 
+	       available=queue:new() :: queue(),
+	       locked=gb_trees:empty() :: gb_tree(),
+	       waiting=queue:new() :: queue(),
+	       start_cmds=[] :: string(),
+	       conn_test_period=0 :: number(),
 	       connect_timeout=infinity :: number() | infinity,
 	       warnings=false :: boolean()}).
 
--record(emysql_connection, {id :: string(), 
-			    pool_id :: atom(), 
+-record(emysql_connection, {id :: string(),
+			    pool_id :: atom(),
 			    encoding :: atom(), % maybe could be latin1 | utf8 ?
-			    socket :: inet:socket(), 
-			    version :: number(), 
-			    thread_id :: number(), 
-			    caps :: number(), 
-			    language :: number, 
-			    prepared=gb_trees:empty(), 
-			    locked_at :: number(), 
-			    alive=true :: boolean(), 
-			    test_period=0 :: number(), 
-			    last_test_time=0 :: number(), 
+			    socket :: inet:socket(),
+			    version :: number(),
+			    thread_id :: number(),
+			    caps :: number(),
+			    language :: number,
+			    prepared=gb_trees:empty(),
+			    locked_at :: number(),
+			    alive=true :: boolean(),
+			    test_period=0 :: number(),
+			    last_test_time=0 :: number(),
 			    monitor_ref :: reference(),
 			    warnings=false :: boolean()}).
 
--record(greeting, {protocol_version :: number(), 
-                   server_version :: binary(), 
-                   thread_id :: number(), 
-                   salt1 :: binary(), 
-                   salt2 :: binary(), 
-                   caps :: number(), 
-                   caps_high :: number(), 
-                   language :: number(), 
-                   status :: number(), 
-                   seq_num :: number(), 
+-record(greeting, {protocol_version :: number(),
+                   server_version :: binary(),
+                   thread_id :: number(),
+                   salt1 :: binary(),
+                   salt2 :: binary(),
+                   caps :: number(),
+                   caps_high :: number(),
+                   language :: number(),
+                   status :: number(),
+                   seq_num :: number(),
                    plugin :: binary()}).
 
--record(field, {seq_num :: number(), 
-                catalog :: binary(), 
-                db :: binary(), 
-                table :: binary(), 
-                org_table :: binary(), 
-                name :: binary(), 
-                org_name :: binary(), 
-                type :: number(), 
-                default :: number(), 
-                charset_nr :: number(), 
-                length :: number(), 
-                flags :: number(), 
-                decimals :: number(), 
+-record(field, {seq_num :: number(),
+                catalog :: binary(),
+                db :: binary(),
+                table :: binary(),
+                org_table :: binary(),
+                name :: binary(),
+                org_name :: binary(),
+                type :: number(),
+                default :: number(),
+                charset_nr :: number(),
+                length :: number(),
+                flags :: number(),
+                decimals :: number(),
                 decoder :: fun()}).
--record(packet, {size :: number(), 
-		 seq_num :: number(), 
+-record(packet, {size :: number(),
+		 seq_num :: number(),
 		 data :: binary()}).
--record(ok_packet, {seq_num :: number(), 
-		    affected_rows :: number(), 
-		    insert_id :: number(), 
-		    status :: number(), 
-		    warning_count :: number(), 
+-record(ok_packet, {seq_num :: number(),
+		    affected_rows :: number(),
+		    insert_id :: number(),
+		    status :: number(),
+		    warning_count :: number(),
 		    msg :: string()
 			 | {error, string(), unicode:latin1_chardata() | unicode:chardata() | unicode:external_chardata()}
 			 | {incomplete, string(), binary()}}).
 
 % It's unfortunate that error_packet's status is binary when the status of other
 % packets is a number.
--record(error_packet, {seq_num :: number(), 
-		       code :: number(), 
-		       status :: binary(), 
+-record(error_packet, {seq_num :: number(),
+		       code :: number(),
+		       status :: binary(),
 		       msg :: [byte()]}).
 
--record(eof_packet, {seq_num :: number(), 
-		     status :: number(), 
+-record(eof_packet, {seq_num :: number(),
+		     status :: number(),
 		     warning_count :: number()}). % extended to mySQL 4.1+ format
 
--record(result_packet, {seq_num :: number(), 
+-record(result_packet, {seq_num :: number(),
 			field_list :: list(),
 			rows, extra}).
 
