@@ -1,100 +1,37 @@
-LIBDIR=$(shell erl -eval 'io:format("~s~n", [code:lib_dir()])' -s init stop -noshell)
-VERSION=0.4.1
-PKGNAME=emysql
-APP_NAME=emysql
+.PHONY:all get-deps compile compile-deps compile-all clean clean-deps clean-all test test-deps test-all help
 
-MODULES=$(shell ls -1 src/*.erl | awk -F[/.] '{ print $$2 }' | sed '$$q;s/$$/,/g')
-MAKETIME=$(shell date)
+# 读取上级配制（可选）。没上级时可以注释
+-include ./../../bash/makefile_config.mk
+ifdef Path_Epm
+	EPM = $(Path_Root_MF)/../../$(Path_Epm)
+endif
+APP_NAME = emysql
+-include ./../../bash/project_include.mk
 
-all: crypto_compat app
-	(cd src;$(MAKE))
+# 入口
+all:compile
 
-app: ebin/$(PKGNAME).app
+# 编译
+compile:
+	@mkdir -p $(EBIN__DEPS_DIR)
+	@mkdir -p $(ETEST_DEPS_DIR)
+	@$(ERL) -pa $(EBIN__DEPS_DIR) -noshell -make -j 10
+	@cp -r $(Path_Root_MF)/src/$(APP_NAME).app.src $(EBIN__DEPS_DIR)/$(APP_NAME).app
+	@echo ">>\033[32m 编译$(APP_NAME) 完成 \033[0m "
+	@#$(EPM) -C $(ROOT)/epm.config compile
 
-crypto_compat:
-	(escript support/crypto_compat.escript)
-
-ebin/$(PKGNAME).app: src/$(PKGNAME).app.src
-	mkdir -p ebin
-	sed -e 's/modules, \[\]/modules, [$(MODULES)]/;s/%MAKETIME%/$(MAKETIME)/' < $< > $@
-
-# Create doc HTML from source comments
-docs:
-	erl -noshell -run edoc_run application "'emysql'" '"."' '[{def,{vsn,""}},{stylesheet, "emysql-style.css"}]'
-
-# Pushes created docs into dir ../Emysql-github-pages to push to github pages.
-# Make sure to do 'make docs' first.
-# will fail if you haven't checked out github pages into ../Emysql-github-pages
-pages:
-	(cd ../Emysql-github-pages; git pull origin gh-pages)
-	cp -r doc/* ../Emysql-github-pages
-	(cd ../Emysql-github-pages; git add .; git commit -m 'make pages'; git push origin gh-pages)
-
-# Create HTML from Markdown to test README.md appearance
-markdown:
-	lua etc/markdown.lua README.md
-
-hello:
-	erlc hello.erl
-	erl -pa ./ebin -s hello run -s init stop -noshell
-
+# 清理
 clean:
-	(cd src;$(MAKE) clean)
-	(cd t;$(MAKE) clean)
-	rm -rf ebin/*.app cover erl_crash.dump
-	rm -f ebin/erl_crash.dump
-	rm -f src/erl_crash.dump
-	rm -f erl_crash.dump
-	rm -f doc/*.html
-	rm -rf test/ct_run*
-	rm -f test/variables-ct*
-	rm -f test/*.beam
-	rm -f test/*.html
-	rm -rf ct_run*
-	rm -f variables-ct*
-	rm -f *.beam
-	rm -f *.html
-	rm -f include/crypto_compat.hrl
-	rm -fr logs
+	@rm -rf $(EBIN__DEPS_DIR)/*.beam
+	@rm -rf $(ETEST_DEPS_DIR)/*.beam
+	@rm -rf $(EBIN__DEPS_DIR)/*.app
+	@rm -rf erl_crash.dump
+	@echo ">>\033[91m 清理$(APP_NAME) 完成 \033[0m "
+	@#$(EPM) clean
 
-package: clean
-	@mkdir $(PKGNAME)-$(VERSION)/ && cp -rf ebin include Makefile README src support t $(PKGNAME)-$(VERSION)
-	@COPYFILE_DISABLE=true tar zcf $(PKGNAME)-$(VERSION).tgz $(PKGNAME)-$(VERSION)
-	@rm -rf $(PKGNAME)-$(VERSION)/
+# 测试
+test:
+	@echo ">>\033[91m 测试$(APP_NAME) 完成(暂) \033[0m "
+	@#$(EPM) -C epm.test.config eunit skip_deps=true
 
-install:
-	@for i in ebin/*.beam ebin/*.app include/*.hrl src/*.erl; do install -m 644 -D $$i $(prefix)/$(LIBDIR)/$(PKGNAME)-$(VERSION)/$$i ; done
-
-all-test: test
-
-CT_OPTS ?=
-CT_RUN = ct_run \
-        -no_auto_compile \
-        -noshell \
-        -pa $(realpath ebin) \
-        -dir test \
-        -logdir logs \
-        -cover test/cover.spec -cover_stop false \
-        $(CT_OPTS)
-# Currently, the order of the test cases matter!
-CT_SUITES=environment basics conn_mgr
-
-build-tests:
-	erlc -v -o test/ $(wildcard test/*.erl) -pa ebin/
-
-test: all build-tests
-	@mkdir -p logs
-	$(CT_RUN) -suite $(addsuffix _SUITE,$(CT_SUITES)) ; \
-
-prove: all
-	(cd t;$(MAKE))
-	prove t/*.t
-
-APPS = kernel stdlib erts crypto public_key ssl compiler asn1
-REPO = emysql
-COMBO_PLT = $(HOME)/.$(REPO)_combo_dialyzer_plt
-build_plt:
-	dialyzer --build_plt --output_plt $(COMBO_PLT) --apps $(APPS)
-
-dialyzer:
-	dialyzer --fullpath -nn --plt $(COMBO_PLT) ebin
+include $(Path_Root_MF)/../../bash/project_help.mk
